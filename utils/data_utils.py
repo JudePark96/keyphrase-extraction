@@ -4,6 +4,7 @@ __email__ = 'judepark@kookmin.ac.kr'
 import codecs
 import json
 import logging
+import h5py
 
 from tqdm import tqdm
 from transformers import BertTokenizer
@@ -25,10 +26,12 @@ class KP20KDataset(Dataset):
         return len(self.features)
 
 
-def get_dataset(json_path: str,
-                tokenizer: BertTokenizer,
-                max_doc_seq_len: int,
-                max_title_seq_len: int) -> list:
+def get_and_save_dataset(
+        json_path: str,
+        output_path: str,
+        tokenizer: BertTokenizer,
+        max_doc_seq_len: int,
+        max_title_seq_len: int):
     features = []
 
     with codecs.open(json_path, 'r', 'utf-8') as f:
@@ -59,14 +62,11 @@ def get_dataset(json_path: str,
 
         f.close()
 
-    return features
-
+    output_file = h5py.File(output_path, 'w')
+    output_file['features'] = features
+    output_file.close()
 
 if __name__ == '__main__':
     tokenizer = BertTokenizer.from_pretrained(bert_model_config)
-    dataset = KP20KDataset(get_dataset('../rsc/prepro_dataset/kp20k.train.json', tokenizer, 128, 30))
-    dataloader = DataLoader(dataset, batch_size=32)
-
-    for batch in dataloader:
-        print(batch)
+    get_and_save_dataset('../rsc/prepro_dataset/kp20k.dev.json', '../rsc/', tokenizer, 128, 30)
 
