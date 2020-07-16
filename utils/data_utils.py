@@ -12,8 +12,7 @@ import torch
 from typing import Any
 from tqdm import tqdm
 from transformers import BertTokenizer
-from config import bert_model_config
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 
 logger = logging.getLogger()
@@ -120,6 +119,6 @@ def get_and_save_dataset(
     save_pickle_data(output_path, features)
 
 if __name__ == '__main__':
-    tokenizer = BertTokenizer.from_pretrained(bert_model_config)
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     get_and_save_dataset('../rsc/prepro_dataset/kp20k.train.json', '../rsc/kp20k.train.feature.pkl', tokenizer, 128, 30)
 
