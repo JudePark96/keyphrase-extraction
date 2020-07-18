@@ -74,44 +74,69 @@ def get_and_save_dataset(
 
 
             # if use n-gram feature, should be changed the way to manipulate.
-            start_end_pos = json_object['start_end_pos']
+            keyphrases = json_object['keyphrases']
+
             start_pos = []
             end_pos = []
 
-            for position in start_end_pos:
-                # if the keyphrase used several times in the document.
-                if len(position) > 1:
-                    for nested_position in position:
-                        start_pos.append(nested_position[0])
-                        end_pos.append(nested_position[1])
+            squeezed_input_ids = encoded_doc_words['input_ids'].squeeze(dim=0)
 
-                # this keyphrase used only one time in the document.
-                start_pos.append(position[0][0])
-                end_pos.append(position[0][1])
+            for keyphrase in keyphrases:
+                # the case of consisting of several words.
+                if len(keyphrase) > 1:
+                    start_keyphrase = keyphrase[0]
+                    end_keyphrase = keyphrase[-1]
 
-            # length should be equal.
-            assert len(start_pos) == len(end_pos)
+                    # present keyphrase extraction
+                    if start_keyphrase in json_object['doc_words'] and end_keyphrase in json_object['doc_words']:
+                        decoded_start_keyphrase = tokenizer.encode(start_keyphrase)
+                        decoded_end_keyphrase = tokenizer.encode(end_keyphrase)
 
-            start_pos = sorted(start_pos)
-            end_pos = sorted(end_pos)
+                        start_token = decoded_start_keyphrase[1] # except [CLS] token.
+                        end_token = decoded_end_keyphrase[-2] # except [SEP] token.
 
-            start_pos_tensor = torch.zeros(1, max_doc_seq_len)
-            end_pos_tensor = torch.zeros(1, max_doc_seq_len)
+                        s_p, e_p = (squeezed_input_ids == start_token).nonzero(), \
+                                   (squeezed_input_ids == end_token).nonzero()
 
-            for s, e in zip(start_pos, end_pos):
-                # [CLS] ... [SEP]
-                if ((s + 1) >= max_doc_seq_len) or ((e + 1) >= max_doc_seq_len):
-                    continue
+                        if s_p > max_doc_seq_len or e_p > max_doc_seq_len:
+                            continue
+
+                        start_pos.append(s_p[0].item())
+                        end_pos.append(e_p[0].item())
                 else:
-                    start_pos_tensor[0][s + 1] = 1
-                    end_pos_tensor[0][e + 1] = 1
+                    # present keyphrase extraction
+                    if keyphrase[0] in json_object['doc_words']:
+                        # ex: telepresence -> '[CLS]', 'tel', '##ep', '##res', '##ence', '[SEP]'
+                        decoded_keyphrase = tokenizer.encode(keyphrase[0])
+
+                        # without special tokens such as CLS, SEP
+                        if len(decoded_keyphrase) == 3:
+                            keyphrase_wo_special_tokens = decoded_keyphrase[1]
+                            s_p, e_p = (squeezed_input_ids == keyphrase_wo_special_tokens).nonzero(), \
+                                       (squeezed_input_ids == keyphrase_wo_special_tokens).nonzero()
+
+                            if s_p > max_doc_seq_len or e_p > max_doc_seq_len:
+                                continue
+
+                            start_pos.append(s_p[0].item())
+                            end_pos.append(e_p[0].item())
+                        else:
+                            keyphrase_wo_special_tokens = decoded_keyphrase[1:len(decoded_keyphrase)-1]
+                            s_p = (squeezed_input_ids == keyphrase_wo_special_tokens[0]).nonzero()
+                            e_p = (squeezed_input_ids == keyphrase_wo_special_tokens[-1]).nonzero()
+
+                            if s_p > max_doc_seq_len or e_p > max_doc_seq_len:
+                                continue
+
+                            start_pos.append(s_p[0].item())
+                            end_pos.append(e_p[0].item())
 
             features.append({
                 'url': json_object['url'],
                 'title': encoded_title,
                 'doc_words': encoded_doc_words,
-                'start_position': start_pos_tensor,
-                'end_position': end_pos_tensor
+                'start_position': start_pos,
+                'end_position': end_pos
             })
 
         f.close()
