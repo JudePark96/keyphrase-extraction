@@ -1,7 +1,7 @@
 __author__ = 'JudePark'
 __email__ = 'judepark@kookmin.ac.kr'
 
-
+import argparse
 import codecs
 import json
 import logging
@@ -144,6 +144,21 @@ def get_and_save_dataset(
     save_pickle_data(output_path, features)
 
 if __name__ == '__main__':
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    get_and_save_dataset('../rsc/prepro_dataset/kp20k.train.json', '../rsc/kp20k.train.feature.pkl', tokenizer, 128, 30)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--tokenizer_type', type=str, required=True,
+                        help="watch out transformers library. ex => bert-base-uncased")
+    parser.add_argument('--source_file', type=str, required=True)
+    parser.add_argument('--dest_file', type=str, required=True)
+    parser.add_argument('--max_doc_seq_len', type=int, required=True)
+    parser.add_argument('--max_title_seq_len', type=int, required=True)
+
+    args = parser.parse_args()
+
+    tokenizer = BertTokenizer.from_pretrained(args.tokenizer_type)
+    # get_and_save_dataset('../rsc/prepro_dataset/kp20k.train.json', '../rsc/kp20k.train.feature.pkl', tokenizer, 128, 30)
+    get_and_save_dataset(args.source_file,
+                         args.dest_file,
+                         tokenizer,
+                         args.max_doc_seq_len,
+                         args.max_title_seq_len)
 
