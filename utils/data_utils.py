@@ -6,34 +6,26 @@ import codecs
 import json
 import logging
 import pickle
-import torch
 
 
 from typing import Any
+
+import torch
 from tqdm import tqdm
 from transformers import BertTokenizer
-from torch.utils.data import Dataset
 
 
 logger = logging.getLogger()
-
-
-class KP20KDataset(Dataset):
-    def __init__(self, features: list) -> None:
-        super(KP20KDataset, self).__init__()
-        self.features = features
-
-    def __getitem__(self, index: int) -> None:
-        return self.features[index]
-
-    def __len__(self) -> int:
-        return len(self.features)
 
 
 def save_pickle_data(filename: str, data: Any) -> None:
     with codecs.open(filename, 'wb') as f:
         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
         f.close()
+
+
+def filter_absent_keyphrase(t: torch.Tensor):
+    return False if str(t.size()) == 'torch.Size([0, 1])' else True
 
 
 def get_and_save_dataset(
@@ -98,11 +90,11 @@ def get_and_save_dataset(
                         s_p, e_p = (squeezed_input_ids == start_token).nonzero(), \
                                    (squeezed_input_ids == end_token).nonzero()
 
-                        if s_p > max_doc_seq_len or e_p > max_doc_seq_len:
-                            continue
+                        if filter_absent_keyphrase(s_p) and filter_absent_keyphrase(e_p):
+                            if max_doc_seq_len > s_p[0].item() and max_doc_seq_len > e_p[0].item():
+                                start_pos.append(s_p[0].item())
+                                end_pos.append(e_p[0].item())
 
-                        start_pos.append(s_p[0].item())
-                        end_pos.append(e_p[0].item())
                 else:
                     # present keyphrase extraction
                     if keyphrase[0] in json_object['doc_words']:
@@ -115,21 +107,19 @@ def get_and_save_dataset(
                             s_p, e_p = (squeezed_input_ids == keyphrase_wo_special_tokens).nonzero(), \
                                        (squeezed_input_ids == keyphrase_wo_special_tokens).nonzero()
 
-                            if s_p > max_doc_seq_len or e_p > max_doc_seq_len:
-                                continue
-
-                            start_pos.append(s_p[0].item())
-                            end_pos.append(e_p[0].item())
+                            if filter_absent_keyphrase(s_p) and filter_absent_keyphrase(e_p):
+                                if max_doc_seq_len > s_p[0].item() and max_doc_seq_len > e_p[0].item():
+                                    start_pos.append(s_p[0].item())
+                                    end_pos.append(e_p[0].item())
                         else:
                             keyphrase_wo_special_tokens = decoded_keyphrase[1:len(decoded_keyphrase)-1]
                             s_p = (squeezed_input_ids == keyphrase_wo_special_tokens[0]).nonzero()
                             e_p = (squeezed_input_ids == keyphrase_wo_special_tokens[-1]).nonzero()
 
-                            if s_p > max_doc_seq_len or e_p > max_doc_seq_len:
-                                continue
-
-                            start_pos.append(s_p[0].item())
-                            end_pos.append(e_p[0].item())
+                            if filter_absent_keyphrase(s_p) and filter_absent_keyphrase(e_p):
+                                if max_doc_seq_len > s_p[0].item() and max_doc_seq_len > e_p[0].item():
+                                    start_pos.append(s_p[0].item())
+                                    end_pos.append(e_p[0].item())
 
             features.append({
                 'url': json_object['url'],
