@@ -24,7 +24,7 @@ def save_pickle_data(filename: str, data: Any) -> None:
         f.close()
 
 
-def filter_absent_keyphrase(t: torch.Tensor):
+def filter_absent_keyphrase(t: torch.Tensor) -> bool:
     return False if str(t.size()) == 'torch.Size([0, 1])' else True
 
 
