@@ -140,9 +140,6 @@ def get_and_save_dataset(
                 'end_pos_tensor': end_pos_tensor
             })
 
-            if idx == 100:
-                break
-
         f.close()
 
     """
