@@ -1,17 +1,16 @@
 __author__ = 'JudePark'
 __email__ = 'judepark@kookmin.ac.kr'
 
+
 import argparse
-import codecs
 import json
 import logging
 import pickle
+import h5py as h5py
+import torch
 
 
 from typing import Any
-
-import h5py as h5py
-import torch
 from tqdm import tqdm
 from transformers import BertTokenizer
 
@@ -20,13 +19,13 @@ logger = logging.getLogger()
 
 
 def save_pickle_data(filename: str, data: Any) -> None:
-    with codecs.open(filename, 'wb') as f:
+    with open(filename, 'wb') as f:
         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
         f.close()
 
 
 def load_pickle_data(filename: str) -> Any:
-    with codecs.open(filename, 'rb') as f:
+    with open(filename, 'rb') as f:
         data = pickle.load(f)
         f.close()
     print(data)
@@ -45,7 +44,7 @@ def get_and_save_dataset(
 
     features = []
 
-    with codecs.open(json_path, 'r', 'utf-8') as f:
+    with open(json_path, 'r', encoding='utf-8') as f:
         for idx, line in tqdm(enumerate(f)):
             # {url, doc_word, title, keyphrase}
             json_object = json.loads(line)
@@ -75,9 +74,6 @@ def get_and_save_dataset(
 
             # if use n-gram feature, should be changed the way to manipulate.
             keyphrases = json_object['keyphrases']
-
-            start_pos = []
-            end_pos = []
 
             squeezed_input_ids = encoded_doc_words['input_ids'].squeeze(dim=0)
 
