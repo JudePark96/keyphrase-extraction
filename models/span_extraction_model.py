@@ -34,7 +34,7 @@ class SpanClassifier(nn.Module):
             pass
         pass
 
-    def init_config(self, model_type: str):
+    def init_config(self, model_type: str) -> None:
         if model_type == 'baseline':
             self.s_classifier = nn.Linear(self.bert.config.hidden_size, 1, bias=True)
             self.e_classifier = nn.Linear(self.bert.config.hidden_size, 1, bias=True)
@@ -47,7 +47,7 @@ class SpanClassifier(nn.Module):
         elif model_type == 'span_rank_title_orh':
             self.rank_loss = nn.MarginRankingLoss(margin=1.0, reduction='mean')
 
-    def baseline(self, doc_last_hidden_states, start_pos, end_pos):
+    def baseline(self, doc_last_hidden_states, start_pos, end_pos) -> torch.Tensor:
         """
         """
         s_logits = F.sigmoid(self.s_classifier(doc_last_hidden_states).squeeze(dim=-1))
