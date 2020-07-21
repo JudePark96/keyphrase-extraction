@@ -18,6 +18,10 @@ class KP20KTrainingDataset(Dataset):
             self.feature_keys = list(features_hdf.keys())
             self.num_instances = features_hdf.get('doc/input_ids').shape[0]
 
+            features_hdf.close()
+
+        print('total examples : %d' % self.num_instances)
+
     def __getitem__(self, index: int) -> Dict:
         return self.read_hdf_features(index)
 
