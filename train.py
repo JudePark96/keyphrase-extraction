@@ -146,8 +146,15 @@ def main():
 
             if args.model_type == 'baseline':
                 loss, s_loss, e_loss = model(batch)
+                if n_gpu > 1:
+                    s_loss, e_loss = s_loss.mean(), e_loss.mean()
             elif args.model_type == 'span_rank':
                 loss, s_loss, e_loss, s_rank_loss, e_rank_loss = model(batch)
+                if n_gpu > 1:
+                    s_loss, e_loss, s_rank_loss, e_rank_loss = s_loss.mean(), \
+                                                               e_loss.mean(), \
+                                                               s_rank_loss.mean(), \
+                                                               e_rank_loss.mean()
             else:
                 loss, s_loss, e_loss = model(batch)
 
