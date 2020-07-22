@@ -47,13 +47,13 @@ class SpanClassifier(nn.Module):
         if model_type == 'baseline':
             self.s_classifier = nn.Linear(self.bert.config.hidden_size, 2, bias=True)
             self.e_classifier = nn.Linear(self.bert.config.hidden_size, 2, bias=True)
-            self.nll_loss = nn.NLLLoss(reduction='mean')
+            self.nll_loss = nn.NLLLoss(reduction='mean').to(self.device)
         elif model_type == 'span_rank':
             # loss = L_rank + L_cross{start_pos} + L_cross{end_pos}
             self.s_classifier = nn.Linear(self.bert.config.hidden_size, 2, bias=True)
             self.e_classifier = nn.Linear(self.bert.config.hidden_size, 2, bias=True)
-            self.rank_loss = nn.MarginRankingLoss(margin=1.0, reduction='mean')
-            self.nll_loss = nn.NLLLoss(reduction='mean')
+            self.rank_loss = nn.MarginRankingLoss(margin=1.0, reduction='mean').to(self.device)
+            self.nll_loss = nn.NLLLoss(reduction='mean').to(self.device)
         elif model_type == 'span_rank_title_orh':
             self.rank_loss = nn.MarginRankingLoss(margin=1.0, reduction='mean')
 
