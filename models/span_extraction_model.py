@@ -1,12 +1,13 @@
 __author__ = 'JudePark'
 __email__ = 'judepark@kookmin.ac.kr'
 
-from typing import Tuple
 
 import torch.nn.functional as F
 import torch.nn as nn
 import torch
 
+
+from typing import Tuple
 from transformers import BertModel, BertTokenizer
 
 
@@ -58,7 +59,7 @@ class SpanClassifier(nn.Module):
                  doc_last_hidden_states: torch.Tensor,
                  attention_mask: torch.Tensor,
                  start_pos: torch.Tensor,
-                 end_pos: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+                 end_pos: torch.Tensor) -> torch.Tensor:
 
         # [bs x seq_len] => [(bs * seq_len)]
         attention_mask = attention_mask.view(-1) == 1
