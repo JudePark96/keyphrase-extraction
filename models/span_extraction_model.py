@@ -7,7 +7,6 @@ import torch.nn as nn
 import torch
 
 
-from typing import Tuple
 from transformers import BertModel, BertTokenizer
 
 
@@ -42,6 +41,8 @@ class SpanClassifier(nn.Module):
         pass
 
     def init_config(self, model_type: str) -> None:
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
         if model_type == 'baseline':
             self.s_classifier = nn.Linear(self.bert.config.hidden_size, 2, bias=True)
             self.e_classifier = nn.Linear(self.bert.config.hidden_size, 2, bias=True)
@@ -125,7 +126,7 @@ class SpanClassifier(nn.Module):
         assert s_pos_score.shape[0] == e_pos_score.shape[0]
         assert s_neg_score.shape[0] == e_neg_score.shape[0]
 
-        flag = torch.FloatTensor([1]) # TODO => device config
+        flag = torch.FloatTensor([1]).to(self.device)
         s_rank_loss = self.rank_loss(s_pos_score.unsqueeze(-1), s_neg_score.unsqueeze(0), flag)
         e_rank_loss = self.rank_loss(e_pos_score.unsqueeze(-1), e_neg_score.unsqueeze(0), flag)
 
