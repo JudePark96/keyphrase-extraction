@@ -120,7 +120,7 @@ class SpanClassifier(nn.Module):
 
         e_pos_score = e_score[end_pos == 1]
         e_neg_score = e_score[end_pos == 0]
-        print(s_pos_score.shape, s_neg_score.shape)
+
         assert s_pos_score.shape[0] == e_pos_score.shape[0]
         assert s_neg_score.shape[0] == e_neg_score.shape[0]
 
