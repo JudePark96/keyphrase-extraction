@@ -1,6 +1,7 @@
 __author__ = 'JudePark'
 __email__ = 'judepark@kookmin.ac.kr'
 
+from typing import Tuple, Any
 
 import torch.nn.functional as F
 import torch.nn as nn
@@ -17,7 +18,7 @@ class SpanClassifier(nn.Module):
         self.model_type = model_type
         self.init_config(model_type)
 
-    def forward(self, batch: dict) -> torch.Tensor:
+    def forward(self, batch: dict) -> Any:
         """
         :param batch: dict_keys(['doc', 'title', 'start_pos', 'end_pos'])
         :return:
@@ -60,7 +61,7 @@ class SpanClassifier(nn.Module):
                  doc_last_hidden_states: torch.Tensor,
                  attention_mask: torch.Tensor,
                  start_pos: torch.Tensor,
-                 end_pos: torch.Tensor) -> torch.Tensor:
+                 end_pos: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
 
         # [bs x seq_len] => [(bs * seq_len)]
         attention_mask = attention_mask.view(-1) == 1
@@ -85,13 +86,13 @@ class SpanClassifier(nn.Module):
 
         total_loss = s_loss + e_loss
 
-        return total_loss
+        return total_loss, s_loss, e_loss
 
     def span_rank(self,
                   doc_last_hidden_states: torch.Tensor,
                   attention_mask: torch.Tensor,
                   start_pos: torch.Tensor,
-                  end_pos: torch.Tensor) -> torch.Tensor:
+                  end_pos: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
 
         # [bs x seq_len] => [(bs * seq_len)]
         attention_mask = attention_mask.view(-1) == 1
@@ -132,7 +133,7 @@ class SpanClassifier(nn.Module):
 
         total_loss = s_loss + e_loss + s_rank_loss + e_rank_loss
 
-        return total_loss
+        return total_loss, s_loss, e_loss, s_rank_loss, e_rank_loss
 
 
 if __name__ == '__main__':
