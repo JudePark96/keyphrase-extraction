@@ -42,6 +42,7 @@ def main():
     parser.add_argument('--log_dir', default='./runs', type=str)
     parser.add_argument('--bert_model_config', default='bert-base-uncased', type=str)
     parser.add_argument('--model_type', default='baseline', type=str)
+    parser.add_argument('--checkpoint', type=str)
 
     # Other parameters
     parser.add_argument("--train_file", default='./rsc/features/kp20k.feature.train.256.32.hdf5', type=str,
@@ -90,6 +91,9 @@ def main():
     bert_model = BertModel.from_pretrained(args.bert_model_config)
 
     model = SpanClassifier(bert_model, args.model_type)
+
+    if args.checkpoint:
+        model.load_state_dict(torch.load(args.checkpoint))
 
     if n_gpu > 1:
         model = nn.DataParallel(model)
