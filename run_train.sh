@@ -5,6 +5,7 @@ python3 train.py \
   --model_type baseline \
   --train_file ./rsc/features/kp20k.feature.train.256.32.hdf5 \
   --valid_file ./rsc/features/kp20k.feature.valid.256.32.hdf5 \
+  --test_file ./rsc/features/kp20k.feature.test.256.32.hdf5 \
   --valid_per_step 1000 \
   --train_batch_size 64 \
   --learning_rate 5e-5 \
