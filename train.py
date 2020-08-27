@@ -152,14 +152,19 @@ def main():
     logger.info("  Batch size = %d", args.train_batch_size)
     logger.info("  Num steps = %d", num_train_optimization_steps)
 
+    if valid_flag:
+        logger.info("  Validation Flag = %d", str(valid_flag))
+
+    if test_flag:
+        logger.info("  Testing Flag = %d", str(test_flag))
+
     num_train_step = num_train_optimization_steps
 
     train_sampler = RandomSampler(train_examples)
-    # TODO => Add argument num_worker option
     train_dataloader = DataLoader(train_examples, sampler=train_sampler, batch_size=args.train_batch_size,
                                   num_workers=args.num_workers)
 
-    logger.info('Start training ...')
+    logger.info('  Start training ...')
     summary_writer = SummaryWriter(args.log_dir)
 
     model.train()
@@ -203,12 +208,13 @@ def main():
                                      (global_step, num_train_step, mean_loss, loss.item()))
 
             if global_step % args.valid_per_step == 0 and valid_flag:
+                logger.info('  Start validation ...')
                 model.eval()
                 
                 s_pred, e_pred = [], []
                 s_gt, e_gt = [], []
 
-                for valid_batch in valid_dataloader:
+                for valid_batch in tqdm(valid_dataloader):
                     with torch.no_grad():
                         valid_result = model(valid_batch, is_eval=True)
 
@@ -222,11 +228,11 @@ def main():
                                 s_gt.append(s_p)
                                 e_gt.append(e_p)
 
-                        s_f1 = f1_score(y_true=torch.Tensor(s_gt), y_pred=torch.Tensor(s_pred))
-                        e_f1 = f1_score(y_true=torch.Tensor(e_gt), y_pred=torch.Tensor(e_pred))
-                        print('f1 score', s_f1, e_f1)
-                        break
-                    pass
+                s_f1 = f1_score(y_true=torch.Tensor(s_gt), y_pred=torch.Tensor(s_pred))
+                e_f1 = f1_score(y_true=torch.Tensor(e_gt), y_pred=torch.Tensor(e_pred))
+
+                summary_writer.add_scalar('Valid/S_F1', s_f1.item(), global_step)
+                summary_writer.add_scalar('Valid/E_F1', e_f1.item(), global_step)
                 model.train()
 
             if global_step % 100 == 0:
@@ -249,6 +255,33 @@ def main():
         else:
             torch.save(model.state_dict(), output_model_file)
         epoch += 1
+
+    if test_flag:
+        logger.info('  Start testing ...')
+        model.eval()
+
+        s_pred, e_pred = [], []
+        s_gt, e_gt = [], []
+
+        for test_batch in tqdm(test_dataloader):
+            with torch.no_grad():
+                valid_result = model(test_batch, is_eval=True)
+
+                if n_gpu > 1:
+                    s_score, e_score = valid_result['s_score'], valid_result['e_score']
+                    s_pos, e_pos = valid_result['s_gt'], valid_result['e_gt']
+
+                    for s_s, e_s, s_p, e_p in zip(s_score.tolist(), e_score.tolist(), s_pos.tolist(), e_pos.tolist()):
+                        s_pred.append(s_s)
+                        e_pred.append(e_s)
+                        s_gt.append(s_p)
+                        e_gt.append(e_p)
+
+        s_f1 = f1_score(y_true=torch.Tensor(s_gt), y_pred=torch.Tensor(s_pred))
+        e_f1 = f1_score(y_true=torch.Tensor(e_gt), y_pred=torch.Tensor(e_pred))
+
+        summary_writer.add_scalar('Test/S_F1', s_f1.item(), global_step)
+        summary_writer.add_scalar('Test/E_F1', e_f1.item(), global_step)
 
 
 if __name__ == "__main__":
