@@ -1,14 +1,15 @@
 __author__ = 'JudePark'
 __email__ = 'judepark@kookmin.ac.kr'
 
+
+from transformers import BertModel, BertTokenizer
+from utils.metric import f1_score
 from typing import Tuple, Any
+
 
 import torch.nn.functional as F
 import torch.nn as nn
 import torch
-
-
-from transformers import BertModel, BertTokenizer
 
 
 class SpanClassifier(nn.Module):
@@ -38,6 +39,12 @@ class SpanClassifier(nn.Module):
                                   end_pos=batch['end_pos'])
             pass
         elif self.model_type == 'span_rank_title_orh':
+            pass
+        elif self.model_type == 'evaluate':
+            return self.evaluate(doc_last_hidden_states=doc_last_hidden_states,
+                                 attention_mask=batch['doc']['attention_mask'],
+                                 start_pos=batch['start_pos'],
+                                 end_pos=batch['end_pos'])
             pass
         pass
 
@@ -134,6 +141,35 @@ class SpanClassifier(nn.Module):
         total_loss = s_loss + e_loss + s_rank_loss + e_rank_loss
 
         return total_loss, s_loss, e_loss, s_rank_loss, e_rank_loss
+
+    def baseline_evaluate(self,
+                 doc_last_hidden_states: torch.Tensor,
+                 attention_mask: torch.Tensor,
+                 start_pos: torch.Tensor,
+                 end_pos: torch.Tensor):
+        # [bs x seq_len] => [(bs * seq_len)]
+        attention_mask = attention_mask.view(-1) == 1
+
+        # [bs x seq_len x num_label]
+        s_logits = F.log_softmax(self.s_classifier(doc_last_hidden_states).squeeze(dim=-1), dim=-1)
+        e_logits = F.log_softmax(self.e_classifier(doc_last_hidden_states).squeeze(dim=-1), dim=-1)
+
+        start_pos = start_pos.view(-1)[attention_mask]
+        end_pos = end_pos.view(-1)[attention_mask]
+
+        # [bs x seq_len]
+        s_score = s_logits.max(dim=-1)[0]
+        e_score = e_logits.max(dim=-1)[0]
+
+        # s_f1 = f1_score(y_true=start_pos, y_pred=s_score)
+        # e_f1 = f1_score(y_true=end_pos, y_pred=e_score)
+
+        return {
+            's_score': s_score,
+            'e_score': e_score,
+            's_gt': start_pos,
+            'e_gt': end_pos
+        }
 
 
 if __name__ == '__main__':

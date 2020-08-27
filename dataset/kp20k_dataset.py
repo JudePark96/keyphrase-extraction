@@ -5,7 +5,9 @@ __email__ = 'judepark@kookmin.ac.kr'
 import h5py
 
 
-from torch.utils.data import Dataset
+from models.span_extraction_model import SpanClassifier
+from transformers import BertModel
+from torch.utils.data import Dataset, DataLoader
 from typing import Dict
 
 
@@ -50,3 +52,15 @@ class KP20KTrainingDataset(Dataset):
             features_hdf.close()
 
         return feature
+
+
+if __name__ == '__main__':
+    dataset = KP20KTrainingDataset('../rsc/features/kp20k.feature.train.256.32.hdf5')
+    print(len(dataset))
+    loader = DataLoader(dataset, batch_size=6)
+    bert_model = BertModel.from_pretrained('bert-base-uncased')
+    model = SpanClassifier(bert_model, 'baseline')
+
+    for batch in loader:
+        print(model(batch))
+        break

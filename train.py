@@ -47,7 +47,15 @@ def main():
     # Other parameters
     parser.add_argument("--train_file", default='./rsc/features/kp20k.feature.train.256.32.hdf5', type=str,
                         help="preprocessed training file")
+    parser.add_argument("--valid_file", default='./rsc/features/kp20k.feature.valid.256.32.hdf5', type=str,
+                        help="preprocessed validation file")
+    parser.add_argument("--test_file", default='./rsc/features/kp20k.feature.test.256.32.hdf5', type=str,
+                        help="preprocessed test file")
     parser.add_argument("--train_batch_size", default=16, type=int, help="Total batch size for training.")
+    parser.add_argument("--valid_batch_size", default=16, type=int, help="Total batch size for training.")
+    parser.add_argument("--test_batch_size", default=16, type=int, help="Total batch size for training.")
+    parser.add_argument("--valid_per_step", default=3000, type=int, help="Validation per step.")
+    parser.add_argument("--num_workers", default=16, type=int, help="number of workers option.")
     parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
     parser.add_argument("--num_train_epochs", default=4.0, type=float,
                         help="Total number of training epochs to perform.")
@@ -106,6 +114,20 @@ def main():
 
     train_examples = KP20KTrainingDataset(args.train_file)
 
+    valid_flag, test_flag = False, False
+
+    if args.valid_file:
+        valid_flag = True
+        valid_examples = KP20KTrainingDataset(args.valid_file)
+        valid_sampler = RandomSampler(valid_examples)
+        valid_dataloader = DataLoader(valid_examples, sampler=valid_sampler, batch_size=args.valid_batch_size)
+
+    if args.test_file:
+        test_flag = True
+        test_examples = KP20KTrainingDataset(args.test_file)
+        test_sampler = RandomSampler(test_examples)
+        test_dataloader = DataLoader(test_examples, sampler=test_sampler, batch_size=args.test_batch_size)
+
     num_train_optimization_steps = int(len(train_examples) / args.train_batch_size) * args.num_train_epochs
 
     # Prepare optimizer
@@ -133,7 +155,8 @@ def main():
 
     train_sampler = RandomSampler(train_examples)
     # TODO => Add argument num_worker option
-    train_dataloader = DataLoader(train_examples, sampler=train_sampler, batch_size=args.train_batch_size, num_workers=16)
+    train_dataloader = DataLoader(train_examples, sampler=train_sampler, batch_size=args.train_batch_size,
+                                  num_workers=args.num_workers)
 
     logger.info('Start training ...')
     summary_writer = SummaryWriter(args.log_dir)
@@ -177,6 +200,16 @@ def main():
             mean_loss = total_loss / tr_step
             iter_bar.set_description("Train Step(%d / %d) (Mean loss=%5.5f) (loss=%5.5f)" %
                                      (global_step, num_train_step, mean_loss, loss.item()))
+
+            if global_step % args.valid_per_step == 0 and valid_flag:
+                model.eval()
+                for valid_batch in valid_dataloader:
+                    with torch.no_grad():
+                        valid_result = model.baseline_evaluate(valid_batch)
+                        print(valid_result['s_score'].shape)
+                        print(valid_result['s_gt'].shape)
+                    pass
+                model.train()
 
             if global_step % 100 == 0:
                 summary_writer.add_scalar('Train/Mean_Loss', mean_loss, global_step)

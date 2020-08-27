@@ -201,6 +201,7 @@ def filter_absent_keyphrases(examples: List[Dict[str, Union[List[str], list]]]):
         stem_char = " ".join([stemmer.stem(w.strip()) for w in norm_char.split(" ")])
 
         return norm_char, stem_char
+
     data_list = []
 
     null_ids, absent_ids = 0, 0

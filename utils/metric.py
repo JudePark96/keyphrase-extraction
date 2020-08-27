@@ -31,4 +31,4 @@ if __name__ == '__main__':
     y_true = torch.randint(0, 2, (10,))
     y_pred = torch.randint(0, 2, (10,))
 
-    print(f1_loss(y_true, y_pred))
+    print(f1_score(y_true, y_pred))
