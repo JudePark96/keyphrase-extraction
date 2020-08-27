@@ -154,15 +154,16 @@ class SpanClassifier(nn.Module):
         s_logits = F.log_softmax(self.s_classifier(doc_last_hidden_states).squeeze(dim=-1), dim=-1)
         e_logits = F.log_softmax(self.e_classifier(doc_last_hidden_states).squeeze(dim=-1), dim=-1)
 
+        # [(bs * seq_len) x num_label]
+        s_logits = s_logits.view(-1, 2)[attention_mask]
+        e_logits = e_logits.view(-1, 2)[attention_mask]
+
         start_pos = start_pos.view(-1)[attention_mask]
         end_pos = end_pos.view(-1)[attention_mask]
 
         # [bs x seq_len]
-        s_score = s_logits.max(dim=-1)[0]
-        e_score = e_logits.max(dim=-1)[0]
-
-        # s_f1 = f1_score(y_true=start_pos, y_pred=s_score)
-        # e_f1 = f1_score(y_true=end_pos, y_pred=e_score)
+        s_score = s_logits.max(dim=-1)[1]
+        e_score = e_logits.max(dim=-1)[1]
 
         return {
             's_score': s_score,

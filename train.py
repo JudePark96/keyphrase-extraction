@@ -21,6 +21,7 @@ from dataset.kp20k_dataset import KP20KTrainingDataset
 from models.span_extraction_model import SpanClassifier
 from utils.optimization import AdamW, WarmupLinearSchedule
 from torch.utils.tensorboard import SummaryWriter
+from utils.metric import f1_score
 
 
 def count_parameters(model):
@@ -203,11 +204,28 @@ def main():
 
             if global_step % args.valid_per_step == 0 and valid_flag:
                 model.eval()
+                
+                s_pred, e_pred = [], []
+                s_gt, e_gt = [], []
+
                 for valid_batch in valid_dataloader:
                     with torch.no_grad():
                         valid_result = model(valid_batch, is_eval=True)
-                        print(valid_result['s_score'].shape)
-                        print(valid_result['s_gt'].shape)
+
+                        if n_gpu > 1:
+                            s_score, e_score = valid_result['s_score'], valid_result['e_score']
+                            s_pos, e_pos = valid_result['s_gt'], valid_result['e_gt']
+                            
+                            for s_s, e_s, s_p, e_p in zip(s_score.tolist(), e_score.tolist(), s_pos.tolist(), e_pos.tolist()):
+                                s_pred.append(s_s)
+                                e_pred.append(e_s)
+                                s_gt.append(s_p)
+                                e_gt.append(e_p)
+
+                        s_f1 = f1_score(y_true=torch.Tensor(s_gt), y_pred=torch.Tensor(s_pred))
+                        e_f1 = f1_score(y_true=torch.Tensor(e_gt), y_pred=torch.Tensor(e_pred))
+                        print('f1 score', s_f1, e_f1)
+                        break
                     pass
                 model.train()
 
