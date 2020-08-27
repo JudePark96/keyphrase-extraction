@@ -203,9 +203,10 @@ def main():
 
             if global_step % args.valid_per_step == 0 and valid_flag:
                 model.eval()
+                print('evaluation mode')
                 for valid_batch in valid_dataloader:
                     with torch.no_grad():
-                        valid_result = model.baseline_evaluate(valid_batch)
+                        valid_result = model(valid_batch, is_eval=True)
                         print(valid_result['s_score'].shape)
                         print(valid_result['s_gt'].shape)
                     pass

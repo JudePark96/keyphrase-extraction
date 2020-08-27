@@ -19,7 +19,7 @@ class SpanClassifier(nn.Module):
         self.model_type = model_type
         self.init_config(model_type)
 
-    def forward(self, batch: dict) -> Any:
+    def forward(self, batch: dict, is_eval: bool=False) -> Any:
         """
         :param batch: dict_keys(['doc', 'title', 'start_pos', 'end_pos'])
         :return:
@@ -40,13 +40,11 @@ class SpanClassifier(nn.Module):
             pass
         elif self.model_type == 'span_rank_title_orh':
             pass
-        elif self.model_type == 'evaluate':
-            return self.evaluate(doc_last_hidden_states=doc_last_hidden_states,
-                                 attention_mask=batch['doc']['attention_mask'],
-                                 start_pos=batch['start_pos'],
-                                 end_pos=batch['end_pos'])
-            pass
-        pass
+        elif is_eval:
+            return self.baseline_evaluate(doc_last_hidden_states=doc_last_hidden_states,
+                                          attention_mask=batch['doc']['attention_mask'],
+                                          start_pos=batch['start_pos'],
+                                          end_pos=batch['end_pos'])
 
     def init_config(self, model_type: str) -> None:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -143,10 +141,10 @@ class SpanClassifier(nn.Module):
         return total_loss, s_loss, e_loss, s_rank_loss, e_rank_loss
 
     def baseline_evaluate(self,
-                 doc_last_hidden_states: torch.Tensor,
-                 attention_mask: torch.Tensor,
-                 start_pos: torch.Tensor,
-                 end_pos: torch.Tensor):
+                          doc_last_hidden_states: torch.Tensor,
+                          attention_mask: torch.Tensor,
+                          start_pos: torch.Tensor,
+                          end_pos: torch.Tensor):
         # [bs x seq_len] => [(bs * seq_len)]
         attention_mask = attention_mask.view(-1) == 1
 
