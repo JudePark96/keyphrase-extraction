@@ -27,24 +27,26 @@ class SpanClassifier(nn.Module):
         doc_last_hidden_states, doc_pooled_output = self.bert(**batch['doc'])
         title_last_hidden_states, title_pooled_output = self.bert(**batch['title'])
 
-        if self.model_type == 'baseline':
-            return self.baseline(doc_last_hidden_states=doc_last_hidden_states,
-                                 attention_mask=batch['doc']['attention_mask'],
-                                 start_pos=batch['start_pos'],
-                                 end_pos=batch['end_pos'])
-        elif self.model_type == 'span_rank':
-            return self.span_rank(doc_last_hidden_states=doc_last_hidden_states,
-                                  attention_mask=batch['doc']['attention_mask'],
-                                  start_pos=batch['start_pos'],
-                                  end_pos=batch['end_pos'])
-            pass
-        elif self.model_type == 'span_rank_title_orh':
-            pass
-        elif is_eval:
-            return self.baseline_evaluate(doc_last_hidden_states=doc_last_hidden_states,
-                                          attention_mask=batch['doc']['attention_mask'],
-                                          start_pos=batch['start_pos'],
-                                          end_pos=batch['end_pos'])
+        if is_eval:
+            if self.model_type == 'baseline':
+                return self.baseline_evaluate(doc_last_hidden_states=doc_last_hidden_states,
+                                              attention_mask=batch['doc']['attention_mask'],
+                                              start_pos=batch['start_pos'],
+                                              end_pos=batch['end_pos'])
+        else:
+            if self.model_type == 'baseline':
+                return self.baseline(doc_last_hidden_states=doc_last_hidden_states,
+                                     attention_mask=batch['doc']['attention_mask'],
+                                     start_pos=batch['start_pos'],
+                                     end_pos=batch['end_pos'])
+            elif self.model_type == 'span_rank':
+                return self.span_rank(doc_last_hidden_states=doc_last_hidden_states,
+                                      attention_mask=batch['doc']['attention_mask'],
+                                      start_pos=batch['start_pos'],
+                                      end_pos=batch['end_pos'])
+                pass
+            elif self.model_type == 'span_rank_title_orh':
+                pass
 
     def init_config(self, model_type: str) -> None:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

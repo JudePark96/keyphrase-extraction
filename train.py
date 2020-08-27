@@ -203,7 +203,6 @@ def main():
 
             if global_step % args.valid_per_step == 0 and valid_flag:
                 model.eval()
-                print('evaluation mode')
                 for valid_batch in valid_dataloader:
                     with torch.no_grad():
                         valid_result = model(valid_batch, is_eval=True)
