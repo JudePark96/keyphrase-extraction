@@ -111,7 +111,7 @@ def main():
     logger.info("Total Parameter: %d" % num_params)
     model.to(device)
 
-    print(model)
+    # print(model)
 
     train_examples = KP20KTrainingDataset(args.train_file)
 
@@ -121,7 +121,7 @@ def main():
         valid_flag = True
         valid_examples = KP20KTrainingDataset(args.valid_file)
         valid_sampler = RandomSampler(valid_examples)
-        valid_dataloader = DataLoader(valid_examples, sampler=valid_sampler, batch_size=args.valid_batch_size)
+        valid_dataloader = DataLoader(valid_examples, batch_size=args.valid_batch_size, num_workers=args.num_workers)
 
     if args.test_file:
         test_flag = True
@@ -153,10 +153,10 @@ def main():
     logger.info("  Num steps = %d", num_train_optimization_steps)
 
     if valid_flag:
-        logger.info("  Validation Flag = %d", str(valid_flag))
+        logger.info("  Validation Flag = %s", str(valid_flag))
 
     if test_flag:
-        logger.info("  Testing Flag = %d", str(test_flag))
+        logger.info("  Testing Flag = %s", str(test_flag))
 
     num_train_step = num_train_optimization_steps
 
@@ -213,20 +213,23 @@ def main():
                 
                 s_pred, e_pred = [], []
                 s_gt, e_gt = [], []
-
+                valid_gs = 0
                 for valid_batch in tqdm(valid_dataloader):
-                    with torch.no_grad():
-                        valid_result = model(valid_batch, is_eval=True)
+                    # with torch.no_grad():
+                    valid_gs += 1
+                    if valid_gs == len(valid_dataloader):
+                        continue
+                    valid_result = model(valid_batch, is_eval=True)
 
-                        if n_gpu > 1:
-                            s_score, e_score = valid_result['s_score'], valid_result['e_score']
-                            s_pos, e_pos = valid_result['s_gt'], valid_result['e_gt']
+                    if n_gpu > 1:
+                        s_score, e_score = valid_result['s_score'], valid_result['e_score']
+                        s_pos, e_pos = valid_result['s_gt'], valid_result['e_gt']
                             
-                            for s_s, e_s, s_p, e_p in zip(s_score.tolist(), e_score.tolist(), s_pos.tolist(), e_pos.tolist()):
-                                s_pred.append(s_s)
-                                e_pred.append(e_s)
-                                s_gt.append(s_p)
-                                e_gt.append(e_p)
+                        for s_s, e_s, s_p, e_p in zip(s_score.tolist(), e_score.tolist(), s_pos.tolist(), e_pos.tolist()):
+                            s_pred.append(s_s)
+                            e_pred.append(e_s)
+                            s_gt.append(s_p)
+                            e_gt.append(e_p)
 
                 s_f1 = f1_score(y_true=torch.Tensor(s_gt), y_pred=torch.Tensor(s_pred))
                 e_f1 = f1_score(y_true=torch.Tensor(e_gt), y_pred=torch.Tensor(e_pred))
@@ -264,8 +267,11 @@ def main():
 
         s_pred, e_pred = [], []
         s_gt, e_gt = [], []
-
+        test_gs = 0
         for test_batch in tqdm(test_dataloader):
+            test_gs += 1
+            if test_gs == len(test_dataloader):
+                continue
             with torch.no_grad():
                 valid_result = model(test_batch, is_eval=True)
 
