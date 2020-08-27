@@ -231,6 +231,8 @@ def main():
                 s_f1 = f1_score(y_true=torch.Tensor(s_gt), y_pred=torch.Tensor(s_pred))
                 e_f1 = f1_score(y_true=torch.Tensor(e_gt), y_pred=torch.Tensor(e_pred))
 
+                logger.info('  Validation Result: s_f1: {}, e_f1: {}'.format(s_f1.item(), e_f1.item()))
+
                 summary_writer.add_scalar('Valid/S_F1', s_f1.item(), global_step)
                 summary_writer.add_scalar('Valid/E_F1', e_f1.item(), global_step)
                 model.train()
@@ -279,6 +281,8 @@ def main():
 
         s_f1 = f1_score(y_true=torch.Tensor(s_gt), y_pred=torch.Tensor(s_pred))
         e_f1 = f1_score(y_true=torch.Tensor(e_gt), y_pred=torch.Tensor(e_pred))
+
+        logger.info('  Testing Result: s_f1: {}, e_f1: {}'.format(s_f1.item(), e_f1.item()))
 
         summary_writer.add_scalar('Test/S_F1', s_f1.item(), global_step)
         summary_writer.add_scalar('Test/E_F1', e_f1.item(), global_step)
